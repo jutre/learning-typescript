@@ -6,6 +6,11 @@ const store = configureStore({
     reducer: {booksState: booksReducer}
 });
 
-export type AppState = ReturnType<typeof store.getState>;
+// Infer the type of `store`
+export type AppStore = typeof store
+// Infer the `AppDispatch` type from the store itself
+export type AppDispatch = typeof store.dispatch
+// Infer the `AppState` type
+export type RootState = ReturnType<typeof store.getState>;
 
 export default store;

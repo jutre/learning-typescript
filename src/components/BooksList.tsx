@@ -1,43 +1,26 @@
 import { useEffect } from "react";
-import { connect, ConnectedProps } from 'react-redux';
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { routes } from "../config";
-import { getAllBooks } from '../selectors/books';
-import { bookDeleted } from "../features/booksSlice";
+import { bookDeleted, getAllBooks } from "../features/booksSlice";
 import { ModalDialog } from './ModalDialog';
 import { setPageTitleTagValue } from "../utils/setPageTitleTagValue";
-
-import { AppState } from "../store/store";
-
-
-const mapStateToProps = (state: AppState) => ({
-  booksArr: getAllBooks(state)
-});
+import { useAppSelector, useAppDispatch } from '../store/reduxHooks';
 
 
-const mapDispatchToProps  = {
-  onBookDelete: (bookId: number) => bookDeleted(bookId), 
-};
-
-
-const connector = connect( mapStateToProps, mapDispatchToProps);
-type PropsFromRedux = ConnectedProps<typeof connector>;
-
-
-
-
-function BooksList ({ booksArr, onBookDelete }: PropsFromRedux) {
+function BooksList () {
+  
   useEffect(() => {
     setPageTitleTagValue("Books");
   }, []);
   
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   /**
    * deletes book in redux store and redirects to book list url.
    * Intended to call from modal confirmation dialog on "Confirm" button
    */
   function deleteBook(bookId: number){
-    onBookDelete(bookId);
+    dispatch(bookDeleted(bookId));
     //restore page title tag
     setPageTitleTagValue("Books");
     navigate(routes.bookListPath);
@@ -53,6 +36,7 @@ function BooksList ({ booksArr, onBookDelete }: PropsFromRedux) {
     navigate(routes.bookListPath);
   }
 
+  const booksArr = useAppSelector(getAllBooks);
   
   //book is selected for deletion - initialise confirmation dialog for inserting later in html
   let showModalDialog = false;
@@ -136,4 +120,4 @@ function BooksList ({ booksArr, onBookDelete }: PropsFromRedux) {
 
 
 
-export default connector(BooksList);
+export default BooksList;

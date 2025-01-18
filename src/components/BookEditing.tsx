@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getBookById } from "../selectors/books";
-import { bookUpdated } from "../features/booksSlice";
+import { bookUpdated, getBookById } from "../features/booksSlice";
 import { routes } from "../config";
 import { FormBuilder } from '../utils/FormBuilder';
 import { Book } from "../types/Book";
-//neede for selectors and action distching
-import store from "../store/store";
+import { useAppSelector, useAppDispatch } from '../store/reduxHooks';
 import { setPageTitleTagValue } from "../utils/setPageTitleTagValue";
 
 
@@ -19,43 +17,43 @@ function BookEditing() {
   const [submitingIndicator, setSubmitingIndicator] = useState(false);
 
   
-  //load book data from store and keep in compnent's state. Components state is needed as component
-  //will be re-rendered when submitting indicator will appear and we need a way to perform data loading only once
-  const [formInitialData, setFormInitialData] = useState({});
+  let formInitialData;
 
   //will contain possible errors
   const [errorMsg, setErrorMsg] = useState("");
 
+  const dispatch = useAppDispatch();
+
   let { bookId } = useParams();
-  
-  useEffect(() => {
-    
-    //load initial book data for editing
-    //(runs after first render, but on first render form was displayed with empty, but user did not see that)
 
-    //exclude non integer and values less than one.
-    //bookId might possibly be undefined because of useParams() api, convert to empty string for usage in regexp (needed because of TS)
-    if(bookId === undefined){
-      bookId = '';
-    }
-    if (! /^[1-9][0-9]*$/.test(bookId)) {
-      setErrorMsg(bookId + " - invalid parameter value! Value must be integer greater than zero.");
+  //useAppDispatch is React hook, it must be called inside function body, possibly with selector parameter int value NaN if
+  //param value can not be casted to reasonable int, in that case returning no book because book with id=0 does not exist; error message
+  //for incorrectly formated param will be generated in useEffect hook
 
+  //fix possible undefined value for passing it to parseInt
+  if(bookId === undefined){
+    bookId = '';
+  }
+  let bookIdIntVal = parseInt(bookId);
+  const initialData = useAppSelector(state => getBookById(state, bookIdIntVal));
+
+  //exclude non integer and values less than one.
+  if (! /^[1-9][0-9]*$/.test(bookId)) {
+    setErrorMsg(bookId + " - invalid parameter value! Value must be integer greater than zero.");
+
+  } else {
+    if (initialData === undefined) {
+      setErrorMsg(`A book with id="${bookId}" was not found!`);
     } else {
-      let bookIdIntVal = parseInt(bookId);
-      const initialData = getBookById(store.getState(), bookIdIntVal);
-
-      if (initialData === undefined) {
-        setErrorMsg(`A book with id="${bookId}" was not found!`);
-      } else {
-        setFormInitialData(initialData);
-      }
+      formInitialData = initialData;
     }
+  }
 
+  useEffect(() => {
     //setting page title from here
     setPageTitleTagValue("Edit book");
   }, []);
-  
+
   let  formFieldsDefinition = [
     {label: "id", name:"id", type:"hidden"},
     {label: "Title", name:"title", type:"text", rule:"required"}, 
@@ -67,7 +65,7 @@ function BookEditing() {
 
     //TODO - maybe convert one by one field from submittedData by converting each field like   {id: parseInt(String(submittedData['id'])), ...}
     //instead of casting
-    store.dispatch(bookUpdated(bookData as Book))
+    dispatch(bookUpdated(bookData as Book))
     
     //simulation of end of fetching, not using real submiting data to server
     setTimeout( () => {setSubmitingIndicator(false)}, 500); 
@@ -82,10 +80,9 @@ function BookEditing() {
       
       <h2>Edit book</h2>
       
-      {errorMsg 
-        ?
-        <div className='error'>{errorMsg}</div>
-        :
+      {errorMsg &&
+        <div className='error'>{errorMsg}</div> }
+      {formInitialData &&
         <FormBuilder formFieldsDefinition={formFieldsDefinition} 
                     submitButtonText="Update"
                     initialData={formInitialData} 

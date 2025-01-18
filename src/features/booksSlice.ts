@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit'
 import { Book } from '../types/Book.ts';
+import { RootState } from "../store/store";
 
 const initialState: Book[] = [];
 for (let i = 1; i <= 10; i++){
@@ -53,5 +54,16 @@ export default booksSlice.reducer
 function nextBookId(books:Book[]) {
   const maxId = books.reduce((maxId, book) => Math.max(book.id, maxId), -1)
   return maxId + 1
+}
+
+export function getAllBooks(state: RootState): Book[] {
+  return state.booksState;
+}
+
+export function getBookById(state: RootState, id: number) {
+  const selectedBook = state.booksState.find(
+    (book) => book.id === id
+  );
+  return selectedBook;
 }
 
